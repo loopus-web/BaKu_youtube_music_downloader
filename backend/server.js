@@ -64,13 +64,27 @@ app.get('/api/download', async (req, res) => {
         const info = await ytdl.getInfo(url);
         const videoTitle = title || info.videoDetails.title;
         const safeTitle = videoTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const contentLength = info.formats.find(format => format.hasAudio && !format.hasVideo)?.contentLength;
 
         res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mp3"`);
         res.setHeader('Content-Type', 'audio/mpeg');
+        
+        // Add content length if available for progress tracking
+        if (contentLength) {
+            res.setHeader('Content-Length', contentLength);
+        }
 
         const stream = ytdl(url, {
             quality: 'highestaudio',
             filter: 'audioonly'
+        });
+
+        let downloadedBytes = 0;
+        
+        stream.on('progress', (chunkLength, downloaded, total) => {
+            downloadedBytes = downloaded;
+            const percent = (downloaded / total) * 100;
+            console.log(`Download progress: ${percent.toFixed(2)}%`);
         });
 
         stream.on('error', (err) => {
