@@ -1,0 +1,183 @@
+# Dependencies
+node_modules/
+*/node_modules/
+package-lock.json
+*/package-lock.json
+yarn.lock
+*/yarn.lock
+pnpm-lock.yaml
+*/pnpm-lock.yaml
+
+# Production builds
+dist/
+build/
+frontend/dist/
+frontend/build/
+*.production.js
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env
+
+# Temporary files
+temp/
+backend/temp/
+*.tmp
+*.temp
+*.cache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE & Editor directories
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Testing
+coverage/
+*.lcov
+.nyc_output/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+frontend/*.tsbuildinfo
+
+# React / Vite
+frontend/.vite/
+frontend/dist-ssr/
+*.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+.grunt
+bower_components
+.lock-wscript
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.cache
+.parcel-cache
+.next
+.nuxt
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn-integrity
+
+# Downloads (if any test downloads occur)
+downloads/
+*.mp3
+*.mp4
+*.webm
+
+# Backup files
+*.backup
+*.bak
+backup/
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Compressed files
+*.zip
+*.rar
+*.tar
+*.gz
+*.7z
+
+# Documentation build
+docs/_build/
+docs/.vuepress/dist/
+
+# Python (if any scripts are added)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Ruby (if any scripts are added)
+*.gem
+*.rbc
+.bundle/
+vendor/bundle/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Docker
+*.dockerignore
+docker-compose.override.yml
+
+# Custom
+.history/
+.vscode-insiders/
+.vercel
+.netlify

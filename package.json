@@ -1,0 +1,22 @@
+{
+  "name": "music-downloader",
+  "version": "1.0.0",
+  "description": "Music Downloader - Search and download music from YouTube as MP3",
+  "main": "index.js",
+  "scripts": {
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm start",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "npm run dev",
+    "setup": "npm install && npm run install:all"
+  },
+  "keywords": ["music", "downloader", "youtube", "mp3", "react", "express", "vite"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
