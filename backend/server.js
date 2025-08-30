@@ -20,7 +20,7 @@ if (!fs.existsSync(tempDir)) {
 
 app.get('/api/search', async (req, res) => {
     try {
-        const { query } = req.query;
+        const { query } = req.query+" music";
         if (!query) {
             return res.status(400).json({ error: 'Query parameter is required' });
         }
@@ -48,6 +48,8 @@ app.get('/api/search', async (req, res) => {
 });
 
 app.get('/api/download', async (req, res) => {
+    let tempFilePath = null;
+    
     try {
         const { url, title } = req.query;
         if (!url) {
@@ -64,15 +66,9 @@ app.get('/api/download', async (req, res) => {
         const info = await ytdl.getInfo(url);
         const videoTitle = title || info.videoDetails.title;
         const safeTitle = videoTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const contentLength = info.formats.find(format => format.hasAudio && !format.hasVideo)?.contentLength;
-
-        res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mp3"`);
-        res.setHeader('Content-Type', 'audio/mpeg');
         
-        // Add content length if available for progress tracking
-        if (contentLength) {
-            res.setHeader('Content-Length', contentLength);
-        }
+        // Create a temporary file path
+        tempFilePath = path.join(tempDir, `${safeTitle}_${Date.now()}.mp3`);
 
         const stream = ytdl(url, {
             quality: 'highestaudio',
@@ -89,28 +85,83 @@ app.get('/api/download', async (req, res) => {
 
         stream.on('error', (err) => {
             console.error('Stream error:', err);
+            if (tempFilePath && fs.existsSync(tempFilePath)) {
+                fs.unlinkSync(tempFilePath);
+            }
             if (!res.headersSent) {
                 res.status(500).json({ error: 'Failed to download stream' });
             }
         });
 
-        ffmpeg(stream)
-            .audioBitrate(192)
-            .audioCodec('libmp3lame')
-            .format('mp3')
-            .on('error', (err) => {
-                console.error('FFmpeg error:', err);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: 'Failed to process audio' });
-                }
-            })
-            .on('end', () => {
-                console.log('Download completed');
-            })
-            .pipe(res);
+        // Process and save to temporary file first
+        await new Promise((resolve, reject) => {
+            ffmpeg(stream)
+                .audioBitrate(192)
+                .audioCodec('libmp3lame')
+                .format('mp3')
+                .outputOptions([
+                    '-avoid_negative_ts', 'make_zero'
+                ])
+                .on('error', (err) => {
+                    console.error('FFmpeg error:', err);
+                    reject(err);
+                })
+                .on('codecData', (data) => {
+                    console.log('Audio duration:', data.duration);
+                })
+                .on('progress', (progress) => {
+                    if (progress.percent) {
+                        console.log('Processing: ' + progress.percent.toFixed(2) + '% done');
+                    }
+                })
+                .on('end', () => {
+                    console.log('Processing finished successfully');
+                    resolve();
+                })
+                .save(tempFilePath);
+        });
+
+        // Check if file was created and has content
+        if (!fs.existsSync(tempFilePath)) {
+            throw new Error('Failed to create audio file');
+        }
+
+        const stats = fs.statSync(tempFilePath);
+        console.log(`File size: ${stats.size} bytes`);
+
+        // Set headers for download
+        res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mp3"`);
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Length', stats.size);
+
+        // Stream the file to the response
+        const fileStream = fs.createReadStream(tempFilePath);
+        
+        fileStream.on('end', () => {
+            console.log('File sent successfully');
+            // Clean up temporary file
+            if (fs.existsSync(tempFilePath)) {
+                fs.unlinkSync(tempFilePath);
+            }
+        });
+
+        fileStream.on('error', (err) => {
+            console.error('File stream error:', err);
+            if (fs.existsSync(tempFilePath)) {
+                fs.unlinkSync(tempFilePath);
+            }
+        });
+
+        fileStream.pipe(res);
 
     } catch (error) {
         console.error('Download error:', error);
+        
+        // Clean up temporary file if it exists
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+        }
+        
         if (!res.headersSent) {
             res.status(500).json({ error: 'Failed to download audio. ' + error.message });
         }
