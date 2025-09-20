@@ -303,6 +303,46 @@ body::before {
   border-radius: 10px;
 }
 
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.preview-button {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6a11cb;
+  background: rgba(147, 112, 219, 0.15);
+  border: 2px solid rgba(147, 112, 219, 0.4);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-button:hover:not(:disabled) {
+  background: rgba(147, 112, 219, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(147, 112, 219, 0.2);
+}
+
+.preview-button.active {
+  color: white;
+  background: linear-gradient(135deg, #6a11cb, #b721ff);
+  border-color: transparent;
+  box-shadow: 0 10px 30px rgba(107, 17, 203, 0.4);
+}
+
+.preview-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .download-button {
   padding: 14px 30px;
   font-size: 15px;
@@ -350,6 +390,55 @@ body::before {
   opacity: 0.5;
   cursor: not-allowed;
   background: linear-gradient(135deg, #999, #777);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  padding: 15px 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.pagination-button {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #23a6d5, #23d5ab);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pagination-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(35, 166, 213, 0.4);
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-weight: 600;
+  color: #4a4a4a;
+  background: rgba(147, 112, 219, 0.1);
+  padding: 8px 15px;
+  border-radius: 12px;
+}
+
+.pagination-total {
+  font-weight: 500;
+  color: #555;
 }
 
 /* Additional magical styles */

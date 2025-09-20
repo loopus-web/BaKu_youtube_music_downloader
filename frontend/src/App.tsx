@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 import './magical-animations.css';
-import DownloadProgress from './DownloadProgress';
 import MagicalParticles from './MagicalParticles';
 import DownloadQueue from './DownloadQueue';
 import type { QueueItem } from './DownloadQueue';
@@ -19,14 +18,23 @@ interface Video {
   author: string;
 }
 
+interface SearchResponse {
+  videos: Video[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 
 function AppContent() {
   const { t, language } = useLanguage();
-  
+
   // Update document title based on language
   useEffect(() => {
     document.title = t.header.title;
   }, [language, t.header.title]);
+  const RESULTS_PER_PAGE = 10;
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,20 +42,52 @@ function AppContent() {
   const [downloadQueue, setDownloadQueue] = useState<QueueItem[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const processingRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [submittedQuery, setSubmittedQuery] = useState('');
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const stopPreview = () => {
+    if (audioRef.current) {
+      const currentAudio = audioRef.current;
+      currentAudio.pause();
+      currentAudio.src = '';
+      currentAudio.load();
+    }
+    audioRef.current = null;
+    setPreviewingId(null);
+    setPreviewLoadingId(null);
+  };
+
+  const fetchSearchResults = async (query: string, page: number) => {
+    if (!query) {
+      return;
+    }
 
     setLoading(true);
     setError(null);
     setSearchResults([]);
+    setTotalResults(0);
+    setTotalPages(1);
+    setCurrentPage(page);
+    stopPreview();
 
     try {
-      const response = await axios.get('/api/search', {
-        params: { query: searchQuery }
+      const response = await axios.get<SearchResponse>('/api/search', {
+        params: {
+          query,
+          page,
+          limit: RESULTS_PER_PAGE
+        }
       });
-      setSearchResults(response.data);
+
+      setSearchResults(response.data.videos);
+      setCurrentPage(response.data.page);
+      setTotalPages(response.data.totalPages);
+      setTotalResults(response.data.total);
     } catch (err) {
       setError(t.errors.searchFailed);
       console.error(err);
@@ -56,8 +96,21 @@ function AppContent() {
     }
   };
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return;
+
+    setSubmittedQuery(trimmedQuery);
+    fetchSearchResults(trimmedQuery, 1);
+  };
+
   // Add video to download queue
   const handleDownload = (video: Video) => {
+    if (previewingId === video.id) {
+      stopPreview();
+    }
+
     const queueItem: QueueItem = {
       id: video.id,
       title: video.title,
@@ -73,7 +126,7 @@ function AppContent() {
   useEffect(() => {
     const processQueue = async () => {
       if (processingRef.current || downloadQueue.length === 0) return;
-      
+
       const currentItem = downloadQueue.find(item => item.status === 'waiting');
       if (!currentItem) return;
       
@@ -148,6 +201,51 @@ function AppContent() {
     processQueue();
   }, [downloadQueue]);
 
+  const handlePageChange = (page: number) => {
+    if (loading || page < 1 || page > totalPages || !submittedQuery || page === currentPage) return;
+    fetchSearchResults(submittedQuery, page);
+  };
+
+  const handlePreview = (video: Video) => {
+    if (previewingId === video.id) {
+      stopPreview();
+      return;
+    }
+
+    stopPreview();
+    setError(null);
+    setPreviewingId(video.id);
+    setPreviewLoadingId(video.id);
+
+    const audio = new Audio(`/api/preview?url=${encodeURIComponent(video.url)}`);
+    audioRef.current = audio;
+
+    const cleanup = () => {
+      stopPreview();
+    };
+
+    audio.addEventListener('canplaythrough', () => {
+      setPreviewLoadingId(null);
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch((err) => {
+          console.error('Preview play error:', err);
+          setError(t.errors.previewFailed);
+          cleanup();
+        });
+      }
+    });
+
+    audio.addEventListener('ended', cleanup);
+    audio.addEventListener('error', (err) => {
+      console.error('Preview audio error:', err);
+      setError(t.errors.previewFailed);
+      cleanup();
+    });
+
+    audio.load();
+  };
+
   // Remove item from queue
   const handleRemoveFromQueue = (id: string) => {
     setDownloadQueue(prev => prev.filter(item => item.id !== id));
@@ -189,6 +287,16 @@ function AppContent() {
 
     document.addEventListener('mousemove', throttledMouseMove);
     return () => document.removeEventListener('mousemove', throttledMouseMove);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.load();
+      }
+    };
   }, []);
 
   return (
@@ -239,8 +347,8 @@ function AppContent() {
         <div className="results-container">
           {searchResults.map((video) => (
             <div key={video.id} className="result-item">
-              <img 
-                src={video.thumbnail} 
+              <img
+                src={video.thumbnail}
                 alt={video.title}
                 className="result-thumbnail"
               />
@@ -249,23 +357,66 @@ function AppContent() {
                 <p className="result-author">{video.author}</p>
                 <p className="result-duration">{video.duration}</p>
               </div>
-              <button
-                onClick={() => handleDownload(video)}
-                className="download-button"
-                disabled={downloadQueue.some(item => item.id === video.id && item.status !== 'completed' && item.status !== 'error')}
-              >
-                {downloadQueue.some(item => item.id === video.id && item.status === 'waiting') 
-                  ? t.download.waiting
-                  : downloadQueue.some(item => item.id === video.id && item.status === 'downloading')
-                  ? t.download.downloading
-                  : downloadQueue.some(item => item.id === video.id && item.status === 'processing')
-                  ? t.download.processing
-                  : t.download.button
-                }
-              </button>
+              <div className="result-actions">
+                <button
+                  onClick={() => handlePreview(video)}
+                  className={`preview-button${previewingId === video.id ? ' active' : ''}`}
+                  disabled={previewLoadingId !== null && previewLoadingId !== video.id}
+                >
+                  {previewLoadingId === video.id
+                    ? t.preview.loading
+                    : previewingId === video.id
+                    ? t.preview.stop
+                    : t.preview.listen}
+                </button>
+                <button
+                  onClick={() => handleDownload(video)}
+                  className="download-button"
+                  disabled={downloadQueue.some(item => item.id === video.id && item.status !== 'completed' && item.status !== 'error')}
+                >
+                  {downloadQueue.some(item => item.id === video.id && item.status === 'waiting')
+                    ? t.download.waiting
+                    : downloadQueue.some(item => item.id === video.id && item.status === 'downloading')
+                    ? t.download.downloading
+                    : downloadQueue.some(item => item.id === video.id && item.status === 'processing')
+                    ? t.download.processing
+                    : t.download.button
+                  }
+                </button>
+              </div>
             </div>
           ))}
         </div>
+        {totalResults > 0 && (
+          <div className="pagination">
+            {totalPages > 1 && (
+              <button
+                className="pagination-button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={loading || currentPage === 1}
+              >
+                {t.pagination.previous}
+              </button>
+            )}
+            <span className="pagination-info">
+              {t.pagination.pageInfo
+                .replace('{current}', currentPage.toString())
+                .replace('{total}', totalPages.toString())}
+            </span>
+            <span className="pagination-total">
+              {t.pagination.totalResults.replace('{count}', totalResults.toString())}
+            </span>
+            {totalPages > 1 && (
+              <button
+                className="pagination-button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={loading || currentPage === totalPages}
+              >
+                {t.pagination.next}
+              </button>
+            )}
+          </div>
+        )}
       </main>
       <PenguinFooter />
     </div>
