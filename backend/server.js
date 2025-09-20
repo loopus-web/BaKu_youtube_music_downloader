@@ -20,16 +20,23 @@ if (!fs.existsSync(tempDir)) {
 
 app.get('/api/search', async (req, res) => {
     try {
-        const { query } = req.query+" music";
+        const { query, page = '1', limit = '10' } = req.query;
+
         if (!query) {
             return res.status(400).json({ error: 'Query parameter is required' });
         }
 
-        console.log('Searching for:', query);
-        const searchResults = await yts(query);
-        
-        const videos = searchResults.videos
-            .slice(0, 10)
+        const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+        const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+
+        const searchQuery = `${query} music`;
+
+        console.log('Searching for:', searchQuery, 'page:', parsedPage);
+        const searchResults = await yts(searchQuery);
+
+        const startIndex = (parsedPage - 1) * parsedLimit;
+        const allVideos = (searchResults.videos || []);
+        const mappedVideos = allVideos
             .map(video => ({
                 id: video.videoId,
                 title: video.title,
@@ -39,11 +46,80 @@ app.get('/api/search', async (req, res) => {
                 author: video.author?.name || ''
             }));
 
-        console.log(`Found ${videos.length} videos`);
-        res.json(videos);
+        const totalResults = mappedVideos.length;
+        const videos = mappedVideos.slice(startIndex, startIndex + parsedLimit);
+        const totalPages = Math.max(Math.ceil(totalResults / parsedLimit), 1);
+
+        console.log(`Found ${totalResults} videos, returning ${videos.length}`);
+        res.json({
+            videos,
+            page: parsedPage,
+            limit: parsedLimit,
+            total: totalResults,
+            totalPages
+        });
     } catch (error) {
         console.error('Search error:', error);
         res.status(500).json({ error: 'Failed to search videos. ' + error.message });
+    }
+});
+
+app.get('/api/preview', async (req, res) => {
+    try {
+        const { url } = req.query;
+
+        if (!url) {
+            return res.status(400).json({ error: 'URL parameter is required' });
+        }
+
+        if (!ytdl.validateURL(url)) {
+            return res.status(400).json({ error: 'Invalid YouTube URL' });
+        }
+
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Cache-Control', 'no-store');
+
+        const stream = ytdl(url, {
+            quality: 'highestaudio',
+            filter: 'audioonly',
+            highWaterMark: 1 << 25
+        });
+
+        stream.on('error', (err) => {
+            console.error('Preview stream error:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to stream preview audio' });
+            } else {
+                res.end();
+            }
+        });
+
+        const command = ffmpeg(stream)
+            .audioBitrate(128)
+            .audioCodec('libmp3lame')
+            .format('mp3')
+            .on('error', (err) => {
+                console.error('Preview ffmpeg error:', err);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Failed to process preview audio' });
+                } else {
+                    res.end();
+                }
+            });
+
+        res.on('close', () => {
+            if (!res.writableEnded) {
+                command.kill('SIGKILL');
+                stream.destroy();
+            }
+        });
+
+        command.pipe(res, { end: true });
+    } catch (error) {
+        console.error('Preview error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to generate preview. ' + error.message });
+        }
     }
 });
 

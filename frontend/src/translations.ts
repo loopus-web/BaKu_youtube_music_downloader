@@ -26,9 +26,21 @@ export const translations = {
         downloadFailed: "Download failed"
       }
     },
+    preview: {
+      listen: "Preview",
+      stop: "Stop preview",
+      loading: "Loading preview..."
+    },
+    pagination: {
+      previous: "Previous",
+      next: "Next",
+      pageInfo: "Page {current} of {total}",
+      totalResults: "Total results: {count}"
+    },
     errors: {
       searchFailed: "Failed to search. Please try again.",
-      downloadFailed: "Failed to download. Please try again."
+      downloadFailed: "Failed to download. Please try again.",
+      previewFailed: "Failed to load preview. Please try again."
     }
   },
   fr: {
@@ -58,9 +70,21 @@ export const translations = {
         downloadFailed: "Échec du téléchargement"
       }
     },
+    preview: {
+      listen: "Écouter un extrait",
+      stop: "Arrêter l'extrait",
+      loading: "Chargement de l'extrait..."
+    },
+    pagination: {
+      previous: "Précédent",
+      next: "Suivant",
+      pageInfo: "Page {current} sur {total}",
+      totalResults: "Résultats totaux : {count}"
+    },
     errors: {
       searchFailed: "Échec de la recherche. Veuillez réessayer.",
-      downloadFailed: "Échec du téléchargement. Veuillez réessayer."
+      downloadFailed: "Échec du téléchargement. Veuillez réessayer.",
+      previewFailed: "Échec du chargement de l'extrait. Veuillez réessayer."
     }
   }
 };
