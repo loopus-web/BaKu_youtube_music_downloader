@@ -10,7 +10,8 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm start",
     "dev:frontend": "cd frontend && npm run dev",
-    "start": "npm run dev",
+    "start": "cd backend && node server.js",
+    "start:dev": "npm run dev",
     "setup": "npm install && npm run install:all"
   },
   "keywords": ["music", "downloader", "youtube", "mp3", "react", "express", "vite"],

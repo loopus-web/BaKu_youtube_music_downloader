@@ -22,7 +22,4 @@ cd backend
 npm install --production
 cd ..
 
-# Make scripts executable
-chmod +x start-render.sh
-
 echo "✅ Build completed successfully!"
