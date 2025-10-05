@@ -42,7 +42,6 @@ if (typeof globalThis.crypto === 'undefined') {
 
 const ytdl = require('@distube/ytdl-core');
 const yts = require('yt-search');
-const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -50,12 +49,19 @@ const ytDlpExec = require('yt-dlp-exec');
 const { exec } = require('child_process');
 require('dotenv').config();
 
-// Check if ffmpeg is available
+// Check if ffmpeg is available and load it conditionally
+let ffmpeg = null;
 let ffmpegAvailable = false;
+
 exec('ffmpeg -version', (error) => {
     if (!error) {
-        ffmpegAvailable = true;
-        console.log('✅ FFmpeg is available');
+        try {
+            ffmpeg = require('fluent-ffmpeg');
+            ffmpegAvailable = true;
+            console.log('✅ FFmpeg is available');
+        } catch (loadError) {
+            console.log('⚠️ FFmpeg module could not be loaded');
+        }
     } else {
         console.log('⚠️ FFmpeg not found, will use yt-dlp for audio extraction');
     }
@@ -251,6 +257,11 @@ app.get('/api/download', async (req, res) => {
 
                 // Process and save to temporary file first
                 const processPromise = new Promise((resolve, reject) => {
+                    if (!ffmpeg || !ffmpegAvailable) {
+                        reject(new Error('FFmpeg not available'));
+                        return;
+                    }
+
                     const ffmpegProcess = ffmpeg(stream)
                         .audioBitrate(192)
                         .audioCodec('libmp3lame')
@@ -353,7 +364,15 @@ app.get('/api/stream', async (req, res) => {
         }
 
         console.log('Streaming preview:', url);
-        
+
+        // Check if ffmpeg is available
+        if (!ffmpegAvailable || !ffmpeg) {
+            return res.status(503).json({
+                error: 'Streaming not available on this server (ffmpeg not installed)',
+                message: 'Please use the download feature instead'
+            });
+        }
+
         // Validate URL
         if (!ytdl.validateURL(url)) {
             return res.status(400).json({ error: 'Invalid YouTube URL' });
