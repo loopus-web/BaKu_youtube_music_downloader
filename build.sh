@@ -12,14 +12,14 @@ pip install yt-dlp
 # Build frontend
 echo "🎨 Building frontend..."
 cd frontend
-npm ci --production=false
+npm install --production=false
 npm run build
 cd ..
 
 # Install backend dependencies
 echo "⚙️ Installing backend dependencies..."
 cd backend
-npm ci --production
+npm install --production
 cd ..
 
 # Make scripts executable
