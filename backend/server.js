@@ -47,7 +47,19 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const ytDlpExec = require('yt-dlp-exec');
+const { exec } = require('child_process');
 require('dotenv').config();
+
+// Check if ffmpeg is available
+let ffmpegAvailable = false;
+exec('ffmpeg -version', (error) => {
+    if (!error) {
+        ffmpegAvailable = true;
+        console.log('✅ FFmpeg is available');
+    } else {
+        console.log('⚠️ FFmpeg not found, will use yt-dlp for audio extraction');
+    }
+});
 
 // Create custom agent with headers to bypass 403 errors
 const agent = ytdl.createAgent(undefined, {
@@ -135,7 +147,9 @@ async function downloadWithYtDlp(url, outputPath) {
         retries: 3,
         fragmentRetries: 3,
         skipDownload: false,
-        noPlaylist: true
+        noPlaylist: true,
+        // Use yt-dlp's built-in ffmpeg if system ffmpeg not available
+        ffmpegLocation: process.env.FFMPEG_PATH || 'ffmpeg'
     };
 
     // Add cookies if file exists
@@ -156,7 +170,8 @@ async function downloadWithYtDlp(url, outputPath) {
 
 app.get('/api/download', async (req, res) => {
     let tempFilePath = null;
-    let useYtDlp = false;
+    // Force yt-dlp on Render, if explicitly set, or if ffmpeg is not available
+    let useYtDlp = !ffmpegAvailable || process.env.USE_YTDLP_ONLY === 'true' || process.env.RENDER === 'true';
 
     try {
         const { url, title } = req.query;
