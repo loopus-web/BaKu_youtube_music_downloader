@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Build script for Render.com deployment
+# Build script optimized for Render.com (no apt-get)
 set -e
 
-echo "🚀 Starting build process..."
+echo "🚀 Starting Render build process..."
 
-# Install system dependencies
-echo "📦 Installing system dependencies..."
-apt-get update
-apt-get install -y ffmpeg python3-pip
-pip3 install yt-dlp
+# Install Python dependencies (yt-dlp) via pip
+echo "📦 Installing yt-dlp via pip..."
+pip install --upgrade pip
+pip install yt-dlp
 
 # Build frontend
 echo "🎨 Building frontend..."
@@ -21,5 +20,9 @@ cd ..
 echo "⚙️ Installing backend dependencies..."
 cd backend
 npm ci --production
+cd ..
+
+# Make scripts executable
+chmod +x start-render.sh
 
 echo "✅ Build completed successfully!"

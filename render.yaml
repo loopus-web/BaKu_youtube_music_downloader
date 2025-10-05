@@ -3,8 +3,8 @@ services:
     name: music-downloader
     env: node
     plan: free
-    buildCommand: ./render-build.sh
-    startCommand: ./start-render.sh
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: chmod +x start-render.sh && ./start-render.sh
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,3 +14,5 @@ services:
         value: 3.11.0
       - key: NODE_VERSION
         value: 20
+      - key: USE_YTDLP_ONLY
+        value: true
