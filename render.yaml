@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: music-downloader
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/YOUR_REPO # Remplacer par votre repo
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/test
+    buildCommand: docker build -t music-downloader .
+    startCommand: docker run -p 10000:10000 music-downloader
+    plan: free # Plan gratuit
+
+    # Configuration pour le plan gratuit
+    autoDeploy: true
+    region: oregon # ou frankfurt pour l'Europe

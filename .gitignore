@@ -181,3 +181,9 @@ docker-compose.override.yml
 .vscode-insiders/
 .vercel
 .netlify
+
+# Music Downloader specific
+backend/cookies.txt
+backend/*-player-script.js
+.claude/settings.local.json
+cookies_base64.txt

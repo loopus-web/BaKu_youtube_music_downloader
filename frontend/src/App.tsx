@@ -34,6 +34,9 @@ function AppContent() {
   const [downloadQueue, setDownloadQueue] = useState<QueueItem[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const processingRef = useRef(false);
+  const [playingPreview, setPlayingPreview] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +165,63 @@ function AppContent() {
     ));
   };
 
+  // Handle preview play/pause
+  const handlePreviewToggle = (video: Video) => {
+    if (playingPreview === video.id) {
+      // Stop current preview
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = null;
+      }
+      setPlayingPreview(null);
+    } else {
+      // Stop any current preview
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+      }
+      
+      // Start new preview
+      const audio = new Audio(`/api/stream?url=${encodeURIComponent(video.url)}`);
+      audioRef.current = audio;
+      
+      audio.play().catch(err => {
+        console.error('Preview playback failed:', err);
+        setPlayingPreview(null);
+      });
+      
+      setPlayingPreview(video.id);
+      
+      // Stop after 5 seconds
+      previewTimerRef.current = setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+        setPlayingPreview(null);
+        previewTimerRef.current = null;
+      }, 5000);
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+      }
+    };
+  }, []);
+
   // Add magical cursor trail effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -239,11 +299,29 @@ function AppContent() {
         <div className="results-container">
           {searchResults.map((video) => (
             <div key={video.id} className="result-item">
-              <img 
-                src={video.thumbnail} 
-                alt={video.title}
-                className="result-thumbnail"
-              />
+              <div className="thumbnail-container">
+                <img 
+                  src={video.thumbnail} 
+                  alt={video.title}
+                  className="result-thumbnail"
+                />
+                <button
+                  className={`preview-button ${playingPreview === video.id ? 'playing' : ''}`}
+                  onClick={() => handlePreviewToggle(video)}
+                  aria-label={playingPreview === video.id ? "Pause preview" : "Play preview"}
+                >
+                  {playingPreview === video.id ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" />
+                      <rect x="14" y="4" width="4" height="16" />
+                    </svg>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               <div className="result-info">
                 <h3>{video.title}</h3>
                 <p className="result-author">{video.author}</p>

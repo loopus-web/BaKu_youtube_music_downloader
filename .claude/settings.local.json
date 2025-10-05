@@ -14,7 +14,13 @@
       "mcp__playwright__browser_evaluate",
       "Bash(npm start)",
       "Bash(chmod:*)",
-      "Bash(npm restart)"
+      "Bash(npm restart)",
+      "Bash(npm run dev:*)",
+      "Bash(npm view:*)",
+      "Bash(npm outdated)",
+      "Bash(npx:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
