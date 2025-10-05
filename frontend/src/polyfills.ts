@@ -12,10 +12,11 @@ if (typeof (window as any).global === 'undefined') {
 }
 
 // Crypto polyfill - comprehensive setup
-const setupCrypto = () => {
+const setupCrypto = async () => {
   try {
-    // Import crypto-browserify
-    const cryptoBrowserify = require('crypto-browserify');
+    // Import crypto-browserify dynamically
+    // @ts-ignore
+    const cryptoBrowserify = await import('crypto-browserify');
 
     // If crypto doesn't exist at all, create it
     if (typeof window.crypto === 'undefined') {

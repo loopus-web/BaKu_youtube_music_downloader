@@ -1,5 +1,12 @@
 // Crypto polyfill for compatibility
+// @ts-ignore
 import cryptoBrowserify from 'crypto-browserify';
+import { Buffer } from 'buffer';
+
+// Make Buffer available globally
+if (typeof window !== 'undefined') {
+  (window as any).Buffer = Buffer;
+}
 
 // Create a hash function that works in the browser
 const createHash = (algorithm: string) => {

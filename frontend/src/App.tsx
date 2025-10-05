@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 import './magical-animations.css';
-import DownloadProgress from './DownloadProgress';
+// import DownloadProgress from './DownloadProgress';  // Unused component
 import MagicalParticles from './MagicalParticles';
 import DownloadQueue from './DownloadQueue';
 import type { QueueItem } from './DownloadQueue';
